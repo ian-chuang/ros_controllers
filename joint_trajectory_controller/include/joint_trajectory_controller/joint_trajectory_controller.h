@@ -76,6 +76,8 @@
 #include <joint_trajectory_controller/hold_trajectory_builder.h>
 #include <joint_trajectory_controller/stop_trajectory_builder.h>
 
+#include <urdf_parser/urdf_parser.h>
+
 namespace joint_trajectory_controller
 {
 

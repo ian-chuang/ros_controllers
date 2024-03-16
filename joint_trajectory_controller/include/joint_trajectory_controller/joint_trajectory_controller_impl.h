@@ -100,7 +100,7 @@ urdf::ModelSharedPtr getUrdf(const ros::NodeHandle& nh, const std::string& param
   return urdf;
 }
 
-std::vector<urdf::JointConstSharedPtr> getUrdfJoints(const urdf::Model& urdf, const std::vector<std::string>& joint_names)
+std::vector<urdf::JointConstSharedPtr> getUrdfJoints(urdf::ModelInterface& urdf, const std::vector<std::string>& joint_names)
 {
   std::vector<urdf::JointConstSharedPtr> out;
   for (const auto& joint_name : joint_names)
@@ -243,11 +243,21 @@ bool JointTrajectoryController<SegmentImpl, HardwareInterface>::init(HardwareInt
   if (joint_names_.empty()) {return false;}
   const unsigned int n_joints = joint_names_.size();
 
-  // URDF joints
-  urdf::ModelSharedPtr urdf = getUrdf(root_nh, "robot_description");
-  if (!urdf) {return false;}
+  std::string robot_description;
+  if (!ros::param::search("controller_urdf_path", robot_description))
+  {
+    ROS_ERROR_STREAM("Searched enclosing namespaces for robot_description but nothing found");
+    return false;
+  }
+  if (!root_nh.getParam(robot_description, robot_description))
+  {
+    ROS_ERROR_STREAM("Failed to load " << robot_description << " from parameter server");
+    return false;
+  }
+  const urdf::ModelInterfaceSharedPtr robot_model_ptr = urdf::parseURDFFile(robot_description);
+  urdf::ModelInterface robot_model = *robot_model_ptr;
 
-  std::vector<urdf::JointConstSharedPtr> urdf_joints = getUrdfJoints(*urdf, joint_names_);
+  std::vector<urdf::JointConstSharedPtr> urdf_joints = getUrdfJoints(robot_model, joint_names_);
   if (urdf_joints.empty()) {return false;}
   assert(n_joints == urdf_joints.size());
 
